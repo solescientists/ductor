@@ -237,52 +237,34 @@ def uninstall() -> None:
 
 
 def upgrade() -> None:
-    """Stop bot, upgrade package, restart."""
-    from ductor_bot.infra.install import detect_install_mode
-    from ductor_bot.infra.updater import perform_upgrade_pipeline
-    from ductor_bot.infra.version import get_current_version
-
-    mode = detect_install_mode()
-    if mode == "dev":
-        _console.print(
-            Panel(
-                t_rich("lifecycle.upgrade.dev_body"),
-                title=t_rich("lifecycle.upgrade.dev_title"),
-                border_style="yellow",
-                padding=(1, 2),
-            ),
-        )
-        return
-
-    _console.print()
-    _console.print(
-        Panel(
-            t_rich("lifecycle.upgrade.body"),
-            title=t_rich("lifecycle.upgrade.title"),
-            border_style="cyan",
-            padding=(1, 2),
-        ),
-    )
-
-    current = get_current_version()
-
-    # 1. Graceful stop
-    stop_bot()
-
-    # 2. Upgrade + verification pipeline
-    _console.print(t_rich("lifecycle.upgrade.upgrading"))
-    changed, actual, output = asyncio.run(
-        perform_upgrade_pipeline(current_version=current),
-    )
-    if output:
-        _console.print(f"[dim]{output}[/dim]")
-
-    if not changed:
-        _console.print(t_rich("lifecycle.upgrade.unchanged", version=actual))
-        return
-
-    _console.print(t_rich("lifecycle.upgrade.complete", old=current, new=actual))
-
-    # 3. Re-exec with new version
-    _console.print(t_rich("lifecycle.upgrade.restarting"))
-    _re_exec_bot()
+    """DISABLED: self-update has been removed from this build."""
+    # DISABLED: upgrade pipeline removed. All PyPI/pip/pipx/uv calls commented out.
+    # from ductor_bot.infra.install import detect_install_mode
+    # from ductor_bot.infra.updater import perform_upgrade_pipeline
+    # from ductor_bot.infra.version import get_current_version
+    # mode = detect_install_mode()
+    # if mode == "dev":
+    #     _console.print(Panel(t_rich("lifecycle.upgrade.dev_body"),
+    #         title=t_rich("lifecycle.upgrade.dev_title"), border_style="yellow", padding=(1, 2)))
+    #     return
+    # _console.print()
+    # _console.print(Panel(t_rich("lifecycle.upgrade.body"),
+    #     title=t_rich("lifecycle.upgrade.title"), border_style="cyan", padding=(1, 2)))
+    # current = get_current_version()
+    # stop_bot()
+    # _console.print(t_rich("lifecycle.upgrade.upgrading"))
+    # changed, actual, output = asyncio.run(perform_upgrade_pipeline(current_version=current))
+    # if output:
+    #     _console.print(f"[dim]{output}[/dim]")
+    # if not changed:
+    #     _console.print(t_rich("lifecycle.upgrade.unchanged", version=actual))
+    #     return
+    # _console.print(t_rich("lifecycle.upgrade.complete", old=current, new=actual))
+    # _console.print(t_rich("lifecycle.upgrade.restarting"))
+    # _re_exec_bot()
+    _console.print(Panel(
+        "Self-update is disabled in this build. Update manually via git.",
+        title="Upgrade disabled",
+        border_style="yellow",
+        padding=(1, 2),
+    ))

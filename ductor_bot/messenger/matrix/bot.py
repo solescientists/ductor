@@ -1026,49 +1026,42 @@ class MatrixBot:
     # --- Upgrade callback ---
 
     async def _handle_upgrade_callback(self, room_id: str, data: str) -> None:
-        """Handle ``upg:cl:<version>``, ``upg:yes:<version>``, ``upg:no`` callbacks."""
-        if data == "upg:no":
-            await self._send_rich(room_id, t("upgrade_handler.skipped"))
-            return
-
-        if data.startswith("upg:cl:"):
-            version = data.split(":", 2)[2] if data.count(":") >= 2 else ""
-            if not version:
-                return
-            from ductor_bot.infra.version import fetch_changelog
-
-            body = await fetch_changelog(version)
-            if body:
-                await self._send_rich(
-                    room_id, f"{t('upgrade_handler.changelog_header', version=version)}\n\n{body}"
-                )
-            else:
-                await self._send_rich(room_id, t("upgrade_handler.no_changelog", version=version))
-            return
-
-        if data.startswith("upg:yes:"):
-            from ductor_bot.infra.restart import EXIT_RESTART, write_restart_marker
-            from ductor_bot.infra.updater import perform_upgrade_pipeline
-            from ductor_bot.infra.version import get_current_version
-
-            current = get_current_version()
-            await self._send_rich(room_id, "Upgrading...")
-            changed, installed, _output = await perform_upgrade_pipeline(
-                current_version=current,
-            )
-            if changed:
-                marker = _expand_marker(self._config.ductor_home)
-                write_restart_marker(marker_path=marker)
-                await self._send_rich(
-                    room_id, t("startup.matrix_upgraded_restarting", old=current, new=installed)
-                )
-                self._exit_code = EXIT_RESTART
-                if self._sync_task and not self._sync_task.done():
-                    self._sync_task.cancel()
-            else:
-                await self._send_rich(
-                    room_id, f"Upgrade could not verify a new version (still {installed})."
-                )
+        """Handle upgrade callbacks. DISABLED — self-update has been removed."""
+        # DISABLED: fetch_changelog and perform_upgrade_pipeline calls removed.
+        # if data == "upg:no":
+        #     await self._send_rich(room_id, t("upgrade_handler.skipped"))
+        #     return
+        # if data.startswith("upg:cl:"):
+        #     version = data.split(":", 2)[2] if data.count(":") >= 2 else ""
+        #     if not version:
+        #         return
+        #     from ductor_bot.infra.version import fetch_changelog
+        #     body = await fetch_changelog(version)
+        #     if body:
+        #         await self._send_rich(
+        #             room_id, f"{t('upgrade_handler.changelog_header', version=version)}\n\n{body}")
+        #     else:
+        #         await self._send_rich(room_id, t("upgrade_handler.no_changelog", version=version))
+        #     return
+        # if data.startswith("upg:yes:"):
+        #     from ductor_bot.infra.restart import EXIT_RESTART, write_restart_marker
+        #     from ductor_bot.infra.updater import perform_upgrade_pipeline
+        #     from ductor_bot.infra.version import get_current_version
+        #     current = get_current_version()
+        #     await self._send_rich(room_id, "Upgrading...")
+        #     changed, installed, _output = await perform_upgrade_pipeline(current_version=current)
+        #     if changed:
+        #         marker = _expand_marker(self._config.ductor_home)
+        #         write_restart_marker(marker_path=marker)
+        #         await self._send_rich(
+        #             room_id, t("startup.matrix_upgraded_restarting", old=current, new=installed))
+        #         self._exit_code = EXIT_RESTART
+        #         if self._sync_task and not self._sync_task.done():
+        #             self._sync_task.cancel()
+        #     else:
+        #         await self._send_rich(
+        #             room_id, f"Upgrade could not verify a new version (still {installed}).")
+        await self._send_rich(room_id, "Self-update is disabled in this build.")
 
     # --- Named session callback ---
 
