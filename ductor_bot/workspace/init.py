@@ -104,15 +104,32 @@ def _copy_with_symlink_check(entry: Path, target: Path) -> None:
 
 
 def _handle_zone2_file(entry: Path, target: Path, dst: Path) -> None:
-    """Handle Zone 2 file copy (always overwrite) and mirror creation."""
-    _copy_with_symlink_check(entry, target)
-    logger.debug("Zone 2 copy: %s", target)
-    # Auto-create mirrors for every CLAUDE.md (AGENTS.md + GEMINI.md)
+    """Handle Zone 2 file copy.
+
+    DISABLED overwrite: previously always overwrote so framework updates would
+    reach users on restart. Now treated as Zone 3 (seed once, never overwrite)
+    so user-customised CLAUDE.md / AGENTS.md / GEMINI.md are never clobbered.
+    """
+    # DISABLED: Zone 2 overwrite removed — seed only if file does not yet exist.
+    # _copy_with_symlink_check(entry, target)
+    # logger.debug("Zone 2 copy: %s", target)
+    if not target.exists():
+        _copy_with_symlink_check(entry, target)
+        logger.debug("Zone 2 seed (first run): %s", target)
+    else:
+        logger.debug("Zone 2 skip (exists, overwrite disabled): %s", target)
+    # Auto-create mirrors for every CLAUDE.md (AGENTS.md + GEMINI.md) — seed only
     if entry.name == "CLAUDE.md":
         for mirror_name in ("AGENTS.md", "GEMINI.md"):
             mirror_target = dst / mirror_name
-            _copy_with_symlink_check(entry, mirror_target)
-            logger.debug("Zone 2 copy: %s", mirror_target)
+            # DISABLED: mirror overwrite removed — seed only.
+            # _copy_with_symlink_check(entry, mirror_target)
+            # logger.debug("Zone 2 copy: %s", mirror_target)
+            if not mirror_target.exists():
+                _copy_with_symlink_check(entry, mirror_target)
+                logger.debug("Zone 2 seed mirror (first run): %s", mirror_target)
+            else:
+                logger.debug("Zone 2 skip mirror (exists, overwrite disabled): %s", mirror_target)
 
 
 def _backup_user_modified_zone2(entry: Path, target: Path) -> None:
@@ -146,11 +163,17 @@ def _backup_user_modified_zone2(entry: Path, target: Path) -> None:
 def _handle_regular_file(entry: Path, target: Path, src: Path, root_src: Path) -> None:
     """Handle regular file with Zone 2 .py or Zone 3 logic."""
     if _is_zone2_py_file(entry, src, root_src):
-        # Zone 2 .py file: always overwrite (framework-controlled).
-        # Back up user modifications first so upgrades never destroy edits silently.
-        _backup_user_modified_zone2(entry, target)
-        _copy_with_symlink_check(entry, target)
-        logger.debug("Zone 2 copy (framework tool): %s", target)
+        # DISABLED: Zone 2 .py overwrite removed — seed only if not present.
+        # Previously always overwrote tool scripts (backup + copy) so framework
+        # updates would propagate; now treated as Zone 3 to prevent silent overwrites.
+        # _backup_user_modified_zone2(entry, target)
+        # _copy_with_symlink_check(entry, target)
+        # logger.debug("Zone 2 copy (framework tool): %s", target)
+        if not target.exists():
+            _copy_with_symlink_check(entry, target)
+            logger.debug("Zone 2 seed (framework tool, first run): %s", target)
+        else:
+            logger.debug("Zone 2 skip (framework tool, exists, overwrite disabled): %s", target)
     elif not target.exists():
         # Zone 3: seed only (user-owned, never overwritten)
         shutil.copy2(entry, target)
