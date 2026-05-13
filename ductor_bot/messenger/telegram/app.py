@@ -790,20 +790,22 @@ class TelegramBot:
             SEP,
             t("info.telegram_description"),
         )
-        keyboard = InlineKeyboardMarkup(
-            inline_keyboard=[
-                [
-                    InlineKeyboardButton(
-                        text="GitHub", url="https://github.com/PleasePrompto/ductor"
-                    ),
-                    InlineKeyboardButton(
-                        text="Changelog",
-                        url="https://github.com/PleasePrompto/ductor/releases",
-                    ),
-                ],
-                [InlineKeyboardButton(text="PyPI", url="https://pypi.org/project/ductor/")],
-            ],
-        )
+        # DISABLED: upstream GitHub/PyPI links removed.
+        # keyboard = InlineKeyboardMarkup(
+        #     inline_keyboard=[
+        #         [
+        #             InlineKeyboardButton(
+        #                 text="GitHub", url="https://github.com/PleasePrompto/ductor"
+        #             ),
+        #             InlineKeyboardButton(
+        #                 text="Changelog",
+        #                 url="https://github.com/PleasePrompto/ductor/releases",
+        #             ),
+        #         ],
+        #         [InlineKeyboardButton(text="PyPI", url="https://pypi.org/project/ductor/")],
+        #     ],
+        # )
+        keyboard = None
         await send_rich(
             self._bot,
             message.chat.id,

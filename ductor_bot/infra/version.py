@@ -1,20 +1,26 @@
 """Package version checking against PyPI and GitHub Releases."""
 
+# DISABLED: All external network calls (PyPI, GitHub Releases) have been
+# commented out. check_pypi() and fetch_changelog() always return None.
+
 from __future__ import annotations
 
 import importlib.metadata
 import logging
-import time
-from dataclasses import dataclass
 
-import aiohttp
+# import time
+# from dataclasses import dataclass
+
+# import aiohttp
+
+from dataclasses import dataclass
 
 logger = logging.getLogger(__name__)
 
-_PYPI_URL = "https://pypi.org/pypi/ductor/json"
-_GITHUB_RELEASES_URL = "https://api.github.com/repos/PleasePrompto/ductor/releases"
+# _PYPI_URL = "https://pypi.org/pypi/ductor/json"
+# _GITHUB_RELEASES_URL = "https://api.github.com/repos/PleasePrompto/ductor/releases"
 _PACKAGE_NAME = "ductor"
-_TIMEOUT = aiohttp.ClientTimeout(total=10)
+# _TIMEOUT = aiohttp.ClientTimeout(total=10)
 
 
 def get_current_version() -> str:
@@ -46,66 +52,64 @@ class VersionInfo:
     summary: str
 
 
-async def check_pypi(*, fresh: bool = False) -> VersionInfo | None:
-    """Check PyPI for the latest version. Returns None on failure.
+async def check_pypi(*, fresh: bool = False) -> VersionInfo | None:  # noqa: ARG001
+    """Disabled: previously checked PyPI for the latest version.
 
-    When ``fresh=True``, request with no-cache headers and a cache-busting
-    query parameter to reduce stale CDN/cache responses.
+    Network calls to PyPI have been commented out. Always returns None.
     """
-    current = get_current_version()
-    headers = None
-    params = None
-    if fresh:
-        headers = {"Cache-Control": "no-cache", "Pragma": "no-cache"}
-        params = {"_": str(time.time_ns())}
+    # DISABLED: outbound PyPI contact removed.
+    # current = get_current_version()
+    # headers = None
+    # params = None
+    # if fresh:
+    #     headers = {"Cache-Control": "no-cache", "Pragma": "no-cache"}
+    #     params = {"_": str(time.time_ns())}
+    # try:
+    #     async with (
+    #         aiohttp.ClientSession(timeout=_TIMEOUT) as session,
+    #         session.get(_PYPI_URL, headers=headers, params=params) as resp,
+    #     ):
+    #         if resp.status != 200:
+    #             return None
+    #         data = await resp.json()
+    # except (aiohttp.ClientError, TimeoutError, ValueError):
+    #     logger.debug("PyPI version check failed", exc_info=True)
+    #     return None
+    # info = data.get("info", {})
+    # latest = info.get("version", "")
+    # if not latest:
+    #     return None
+    # summary = info.get("summary", "")
+    # update_available = _parse_version(latest) > _parse_version(current)
+    # return VersionInfo(
+    #     current=current,
+    #     latest=latest,
+    #     update_available=update_available,
+    #     summary=summary,
+    # )
+    return None
 
-    try:
-        async with (
-            aiohttp.ClientSession(timeout=_TIMEOUT) as session,
-            session.get(_PYPI_URL, headers=headers, params=params) as resp,
-        ):
-            if resp.status != 200:
-                return None
-            data = await resp.json()
-    except (aiohttp.ClientError, TimeoutError, ValueError):
-        logger.debug("PyPI version check failed", exc_info=True)
-        return None
 
-    info = data.get("info", {})
-    latest = info.get("version", "")
-    if not latest:
-        return None
+async def fetch_changelog(version: str) -> str | None:  # noqa: ARG001
+    """Disabled: previously fetched release notes from GitHub Releases.
 
-    summary = info.get("summary", "")
-    update_available = _parse_version(latest) > _parse_version(current)
-    return VersionInfo(
-        current=current,
-        latest=latest,
-        update_available=update_available,
-        summary=summary,
-    )
-
-
-async def fetch_changelog(version: str) -> str | None:
-    """Fetch release notes for *version* from GitHub Releases.
-
-    Tries ``v{version}`` tag first, then ``{version}`` without prefix.
-    Returns the release body (Markdown) or ``None`` on failure.
+    Network calls to GitHub have been commented out. Always returns None.
     """
-    headers = {"Accept": "application/vnd.github+json"}
-    for tag in (f"v{version}", version):
-        url = f"{_GITHUB_RELEASES_URL}/tags/{tag}"
-        try:
-            async with (
-                aiohttp.ClientSession(timeout=_TIMEOUT, headers=headers) as session,
-                session.get(url) as resp,
-            ):
-                if resp.status != 200:
-                    continue
-                data = await resp.json()
-                body: str = data.get("body", "")
-                if body:
-                    return body.strip()
-        except (aiohttp.ClientError, TimeoutError, ValueError):
-            logger.debug("GitHub release fetch failed for tag %s", tag, exc_info=True)
+    # DISABLED: outbound GitHub contact removed.
+    # headers = {"Accept": "application/vnd.github+json"}
+    # for tag in (f"v{version}", version):
+    #     url = f"{_GITHUB_RELEASES_URL}/tags/{tag}"
+    #     try:
+    #         async with (
+    #             aiohttp.ClientSession(timeout=_TIMEOUT, headers=headers) as session,
+    #             session.get(url) as resp,
+    #         ):
+    #             if resp.status != 200:
+    #                 continue
+    #             data = await resp.json()
+    #             body: str = data.get("body", "")
+    #             if body:
+    #                 return body.strip()
+    #     except (aiohttp.ClientError, TimeoutError, ValueError):
+    #         logger.debug("GitHub release fetch failed for tag %s", tag, exc_info=True)
     return None

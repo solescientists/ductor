@@ -9,8 +9,8 @@ from typing import TYPE_CHECKING
 
 from ductor_bot.i18n import t
 from ductor_bot.infra.restart import consume_restart_sentinel
-from ductor_bot.infra.updater import UpdateObserver, consume_upgrade_sentinel
-from ductor_bot.infra.version import get_current_version
+# DISABLED: from ductor_bot.infra.updater import UpdateObserver, consume_upgrade_sentinel
+# DISABLED: from ductor_bot.infra.version import get_current_version
 
 if TYPE_CHECKING:
     from ductor_bot.messenger.telegram.app import TelegramBot
@@ -32,15 +32,16 @@ async def _handle_restart_sentinel(bot: TelegramBot) -> dict[str, object] | None
 
 async def _handle_recovery(bot: TelegramBot, sentinel: dict[str, object] | None) -> None:
     """Handle upgrade sentinel, startup lifecycle, and auto-recovery of interrupted work."""
-    upgrade = await asyncio.to_thread(consume_upgrade_sentinel, bot._orch.paths.ductor_home)
-    if upgrade:
-        uid = int(upgrade.get("chat_id", 0))
-        old_v = upgrade.get("old_version", "?")
-        new_v = upgrade.get("new_version", get_current_version())
-        if uid:
-            await bot.notification_service.notify(
-                uid, t("startup.upgrade_complete", old=old_v, new=new_v)
-            )
+    # DISABLED: upgrade sentinel notification removed (self-update is disabled).
+    # upgrade = await asyncio.to_thread(consume_upgrade_sentinel, bot._orch.paths.ductor_home)
+    # if upgrade:
+    #     uid = int(upgrade.get("chat_id", 0))
+    #     old_v = upgrade.get("old_version", "?")
+    #     new_v = upgrade.get("new_version", get_current_version())
+    #     if uid:
+    #         await bot.notification_service.notify(
+    #             uid, t("startup.upgrade_complete", old=old_v, new=new_v)
+    #         )
 
     from ductor_bot.infra.startup_state import detect_startup_kind, save_startup_state
     from ductor_bot.text.response_format import startup_notification_text
@@ -115,12 +116,11 @@ async def _run_primary_startup(bot: TelegramBot) -> None:
 
     await _handle_recovery(bot, sentinel)
 
-    # Start background version checker (skip for dev/source installs)
-    from ductor_bot.infra.install import is_upgradeable
-
-    if is_upgradeable() and bot.config.update_check and bot._agent_name == "main":
-        bot._update_observer = UpdateObserver(notify=bot._on_update_available)
-        bot._update_observer.start()
+    # DISABLED: background version checker removed.
+    # from ductor_bot.infra.install import is_upgradeable
+    # if is_upgradeable() and bot.config.update_check and bot._agent_name == "main":
+    #     bot._update_observer = UpdateObserver(notify=bot._on_update_available)
+    #     bot._update_observer.start()
 
 
 async def run_startup(bot: TelegramBot) -> None:

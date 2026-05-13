@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING
 
 from ductor_bot.cli.auth import check_all_auth
 from ductor_bot.i18n import t
-from ductor_bot.infra.version import check_pypi, get_current_version
+from ductor_bot.infra.version import get_current_version  # check_pypi DISABLED
 from ductor_bot.orchestrator.registry import OrchestratorResult
 from ductor_bot.orchestrator.selectors.cron_selector import cron_selector_start
 from ductor_bot.orchestrator.selectors.model_selector import model_selector_start, switch_model
@@ -107,72 +107,37 @@ async def cmd_cron(orch: Orchestrator, _key: SessionKey, _text: str) -> Orchestr
 
 
 async def cmd_upgrade(_orch: Orchestrator, _key: SessionKey, _text: str) -> OrchestratorResult:
-    """Handle /upgrade: check for updates and offer upgrade."""
-    logger.info("Upgrade check requested")
-
-    from ductor_bot.infra.install import detect_install_mode
-
-    if detect_install_mode() == "dev":
-        return OrchestratorResult(
-            text=fmt(
-                t("upgrade.dev_header"),
-                SEP,
-                t("upgrade.dev_body"),
-            ),
-        )
-
-    info = await check_pypi(fresh=True)
-
-    if info is None:
-        return OrchestratorResult(
-            text=t("upgrade.pypi_unreachable"),
-        )
-
-    if not info.update_available:
-        keyboard = ButtonGrid(
-            rows=[
-                [
-                    Button(
-                        text=t("upgrade.btn_changelog", version=info.current),
-                        callback_data=f"upg:cl:{info.current}",
-                    )
-                ],
-            ]
-        )
-        return OrchestratorResult(
-            text=fmt(
-                t("upgrade.up_to_date_header"),
-                SEP,
-                t("upgrade.up_to_date_body", current=info.current, latest=info.latest),
-            ),
-            buttons=keyboard,
-        )
-
-    keyboard = ButtonGrid(
-        rows=[
-            [
-                Button(
-                    text=t("upgrade.btn_changelog", version=info.latest),
-                    callback_data=f"upg:cl:{info.latest}",
-                )
-            ],
-            [
-                Button(
-                    text=t("upgrade.btn_yes"),
-                    callback_data=f"upg:yes:{info.latest}",
-                ),
-                Button(text=t("upgrade.btn_not_now"), callback_data="upg:no"),
-            ],
-        ]
-    )
-
+    """Handle /upgrade: DISABLED — self-update has been removed."""
+    # DISABLED: PyPI check and upgrade pipeline removed.
+    # from ductor_bot.infra.install import detect_install_mode
+    # if detect_install_mode() == "dev":
+    #     return OrchestratorResult(text=fmt(t("upgrade.dev_header"), SEP, t("upgrade.dev_body")))
+    # info = await check_pypi(fresh=True)
+    # if info is None:
+    #     return OrchestratorResult(text=t("upgrade.pypi_unreachable"))
+    # if not info.update_available:
+    #     keyboard = ButtonGrid(rows=[[Button(text=t("upgrade.btn_changelog", version=info.current),
+    #         callback_data=f"upg:cl:{info.current}")]])
+    #     return OrchestratorResult(
+    #         text=fmt(t("upgrade.up_to_date_header"), SEP,
+    #                  t("upgrade.up_to_date_body", current=info.current, latest=info.latest)),
+    #         buttons=keyboard)
+    # keyboard = ButtonGrid(rows=[
+    #     [Button(text=t("upgrade.btn_changelog", version=info.latest),
+    #             callback_data=f"upg:cl:{info.latest}")],
+    #     [Button(text=t("upgrade.btn_yes"), callback_data=f"upg:yes:{info.latest}"),
+    #      Button(text=t("upgrade.btn_not_now"), callback_data="upg:no")]])
+    # return OrchestratorResult(
+    #     text=fmt(t("upgrade.available_header"), SEP,
+    #              t("upgrade.available_body", current=info.current, latest=info.latest)),
+    #     buttons=keyboard)
+    current = get_current_version()
     return OrchestratorResult(
         text=fmt(
-            t("upgrade.available_header"),
+            "Self-update disabled",
             SEP,
-            t("upgrade.available_body", current=info.current, latest=info.latest),
-        ),
-        buttons=keyboard,
+            f"Installed: `{current}`\n\nAuto-update and PyPI contact have been disabled in this build.",
+        )
     )
 
 
