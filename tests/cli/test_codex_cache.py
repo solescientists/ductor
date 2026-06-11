@@ -438,6 +438,52 @@ def test_fallback_models_have_exactly_one_default() -> None:
     """Exactly one fallback model must be marked as default."""
     defaults = [m for m in _FALLBACK_CODEX_MODELS if m.is_default]
     assert len(defaults) == 1
+    assert defaults[0].id == "gpt-5.5"
+
+
+def test_fallback_models_do_not_include_unsupported_chatgpt_default() -> None:
+    """Fallback models must not reintroduce the unsupported legacy default."""
+    fallback_ids = {m.id for m in _FALLBACK_CODEX_MODELS}
+    assert "gpt-5.3-codex" not in fallback_ids
+
+
+def test_from_json_filters_legacy_default_for_chatgpt_catalog() -> None:
+    """Persisted stale caches with modern ChatGPT models should drop gpt-5.3-codex."""
+    cache = CodexModelCache.from_json(
+        {
+            "last_updated": datetime.now(UTC).isoformat(),
+            "models": [
+                {
+                    "id": "gpt-5.3-codex",
+                    "display_name": "gpt-5.3-codex",
+                    "description": "Legacy model",
+                    "supported_efforts": ["low", "medium", "high", "xhigh"],
+                    "default_effort": "medium",
+                    "is_default": True,
+                },
+                {
+                    "id": "gpt-5.5",
+                    "display_name": "GPT-5.5",
+                    "description": "Current model",
+                    "supported_efforts": ["low", "medium", "high", "xhigh"],
+                    "default_effort": "medium",
+                    "is_default": False,
+                },
+                {
+                    "id": "gpt-5.4",
+                    "display_name": "GPT-5.4",
+                    "description": "Current model",
+                    "supported_efforts": ["low", "medium", "high", "xhigh"],
+                    "default_effort": "medium",
+                    "is_default": False,
+                },
+            ],
+        }
+    )
+
+    assert "gpt-5.3-codex" not in {m.id for m in cache.models}
+    defaults = [m.id for m in cache.models if m.is_default]
+    assert defaults == ["gpt-5.5"]
 
 
 def test_serialize_deserialize(fresh_cache: CodexModelCache) -> None:

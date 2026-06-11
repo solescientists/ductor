@@ -2,18 +2,24 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import Any, Self
 
 from ductor_bot.cli.codex_discovery import CodexModelInfo, discover_codex_models
 from ductor_bot.cli.model_cache import BaseModelCache
 
+_CHATGPT_CODEX_MODEL_IDS: frozenset[str] = frozenset(
+    {"gpt-5.5", "gpt-5.4", "gpt-5.4-mini", "gpt-5.3-codex-spark"}
+)
+_UNSUPPORTED_CHATGPT_CODEX_MODEL_IDS: frozenset[str] = frozenset({"gpt-5.3-codex"})
+_FALLBACK_DEFAULT_CODEX_MODEL_ID = "gpt-5.5"
+
 # Hardcoded fallback when discovery and disk cache both fail.
 _FALLBACK_CODEX_MODELS: tuple[CodexModelInfo, ...] = (
     CodexModelInfo(
-        id="gpt-5.3-codex",
-        display_name="gpt-5.3-codex",
-        description="Latest frontier agentic coding model.",
+        id="gpt-5.5",
+        display_name="GPT-5.5",
+        description="Frontier model for complex coding, research, and real-world work.",
         supported_efforts=("low", "medium", "high", "xhigh"),
         default_effort="medium",
         is_default=True,
@@ -27,22 +33,45 @@ _FALLBACK_CODEX_MODELS: tuple[CodexModelInfo, ...] = (
         is_default=False,
     ),
     CodexModelInfo(
-        id="gpt-5.2-codex",
-        display_name="gpt-5.2-codex",
-        description="Frontier agentic coding model.",
+        id="gpt-5.4-mini",
+        display_name="GPT-5.4-Mini",
+        description="Small, fast, and cost-efficient model for simpler coding tasks.",
         supported_efforts=("low", "medium", "high", "xhigh"),
         default_effort="medium",
         is_default=False,
     ),
     CodexModelInfo(
-        id="gpt-5.1-codex-mini",
-        display_name="gpt-5.1-codex-mini",
-        description="Optimized for codex. Cheaper, faster, but less capable.",
-        supported_efforts=("medium", "high"),
-        default_effort="medium",
+        id="gpt-5.3-codex-spark",
+        display_name="GPT-5.3-Codex-Spark",
+        description="Ultra-fast coding model.",
+        supported_efforts=("low", "medium", "high", "xhigh"),
+        default_effort="high",
         is_default=False,
     ),
 )
+
+
+def _normalize_codex_models(models: list[CodexModelInfo]) -> list[CodexModelInfo]:
+    """Normalize discovered models for the current ChatGPT-backed Codex catalog."""
+    if not models:
+        return []
+
+    has_chatgpt_catalog = any(model.id in _CHATGPT_CODEX_MODEL_IDS for model in models)
+    if has_chatgpt_catalog:
+        models = [model for model in models if model.id not in _UNSUPPORTED_CHATGPT_CODEX_MODEL_IDS]
+    if not models:
+        return []
+
+    defaults = [model for model in models if model.is_default]
+    if len(defaults) == 1:
+        return models
+
+    preferred_default = (
+        _FALLBACK_DEFAULT_CODEX_MODEL_ID
+        if any(model.id == _FALLBACK_DEFAULT_CODEX_MODEL_ID for model in models)
+        else models[0].id
+    )
+    return [replace(model, is_default=model.id == preferred_default) for model in models]
 
 
 @dataclass(frozen=True)
@@ -58,7 +87,7 @@ class CodexModelCache(BaseModelCache):
 
     @classmethod
     async def _discover(cls) -> list[CodexModelInfo]:
-        return await discover_codex_models()
+        return _normalize_codex_models(await discover_codex_models())
 
     @classmethod
     def _empty_models(cls) -> list[CodexModelInfo]:
@@ -66,7 +95,7 @@ class CodexModelCache(BaseModelCache):
 
     @classmethod
     def _fallback_models(cls) -> list[CodexModelInfo]:
-        return list(_FALLBACK_CODEX_MODELS)
+        return _normalize_codex_models(list(_FALLBACK_CODEX_MODELS))
 
     def get_model(self, model_id: str) -> CodexModelInfo | None:
         """Look up model by ID."""
@@ -108,17 +137,19 @@ class CodexModelCache(BaseModelCache):
     @classmethod
     def from_json(cls, data: dict[str, Any]) -> Self:
         """Deserialize from JSON."""
-        models = [
-            CodexModelInfo(
-                id=m["id"],
-                display_name=m["display_name"],
-                description=m["description"],
-                supported_efforts=tuple(m["supported_efforts"]),
-                default_effort=m["default_effort"],
-                is_default=m["is_default"],
-            )
-            for m in data["models"]
-        ]
+        models = _normalize_codex_models(
+            [
+                CodexModelInfo(
+                    id=m["id"],
+                    display_name=m["display_name"],
+                    description=m["description"],
+                    supported_efforts=tuple(m["supported_efforts"]),
+                    default_effort=m["default_effort"],
+                    is_default=m["is_default"],
+                )
+                for m in data["models"]
+            ]
+        )
 
         return cls(
             last_updated=data["last_updated"],

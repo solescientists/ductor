@@ -111,9 +111,14 @@ class CodexCLI(BaseCLI):
         self, final_prompt: str, session_id: str, *, json_output: bool
     ) -> list[str]:
         """Build command to resume an existing Codex session."""
+        cfg = self._config
         cmd = [self._cli, "exec", "resume"]
         if json_output:
             cmd.append("--json")
+        if cfg.model:
+            cmd += ["--model", cfg.model]
+        if cfg.reasoning_effort and cfg.reasoning_effort != "default":
+            cmd += ["-c", f"model_reasoning_effort={cfg.reasoning_effort}"]
         cmd += self._sandbox_flags()
         cmd += ["--", session_id]
         cmd.append("-" if _IS_WINDOWS else final_prompt)

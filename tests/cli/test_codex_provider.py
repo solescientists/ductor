@@ -261,18 +261,36 @@ class TestBuildCommand:
         assert cmd[image_indices[1] + 1] == "img2.jpg"
 
     def test_resume_session_changes_structure(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        cli = _make_cli(monkeypatch, permission_mode="bypassPermissions")
+        cli = _make_cli(
+            monkeypatch,
+            model="gpt-5.5",
+            reasoning_effort="high",
+            permission_mode="bypassPermissions",
+        )
         cmd = cli._build_command("hello", resume_session="thread-abc")
         assert cmd[0] == "/usr/bin/codex"
         assert cmd[1] == "exec"
         assert cmd[2] == "resume"
         assert "--json" in cmd
+        assert "--model" in cmd
+        idx_model = cmd.index("--model")
+        assert cmd[idx_model + 1] == "gpt-5.5"
+        assert "-c" in cmd
+        idx_config = cmd.index("-c")
+        assert cmd[idx_config + 1] == "model_reasoning_effort=high"
         assert "--dangerously-bypass-approvals-and-sandbox" in cmd
         assert "thread-abc" in cmd
-        # resume does not include --model, --color, --skip-git-repo-check
-        assert "--model" not in cmd
+        # resume does not include fresh-session-only flags
         assert "--color" not in cmd
         assert "--skip-git-repo-check" not in cmd
+
+    def test_resume_session_omits_model_when_unconfigured(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        cli = _make_cli(monkeypatch, model=None, reasoning_effort="default")
+        cmd = cli._build_command("hello", resume_session="thread-abc")
+        assert "--model" not in cmd
+        assert "-c" not in cmd
 
     def test_resume_session_json_output_false(self, monkeypatch: pytest.MonkeyPatch) -> None:
         cli = _make_cli(monkeypatch)
